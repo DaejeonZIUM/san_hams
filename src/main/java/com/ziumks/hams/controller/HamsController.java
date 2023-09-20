@@ -74,7 +74,7 @@ public class HamsController {
             int L = is.read(response);
             // 리스폰스 데이터 확인
             resultFromServer = new String(response, 0, L);
-            log.info("Hams return Message check : " + resultFromServer);
+            log.info("Hams return Message check :  " + resultFromServer);
             socket.close();
             result = true;
 
