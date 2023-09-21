@@ -21,7 +21,7 @@ public class HamsPocMsgDto {
     private String dat_FLDS = "2"; //데이터 필드수 기본 2
     /* Body */
     private String port = "0";  // 전원 포트 번호(0: 전체)
-    private String type = "0"; // 0: off, 1: on, 2: restart
+    private String type; // 0: off, 1: on, 2: restart
     /* Tail */
     private String asterisk = "*";    // CRC-16 필드 직전임을 표시 *
     private String CRC16;   // CRC 코드 기본 CRC-16-CCITT (0xFFFF)

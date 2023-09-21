@@ -35,15 +35,29 @@ public class HamsController {
     }
 
     /*
+     * Hams Server 장비 상태 조회 컨트롤러 - 20230921_0940_이상민
+     */
+    @GetMapping("/pos")
+    public String hamsPos(
+            @RequestParam String equipment_ID
+    ) {
+        Gson gson = new Gson();
+        ResponseEntity<String> result = hamsService.hamsPos(equipment_ID);
+
+        return gson.toJson(result);
+    }
+
+    /*
      * Hams Server 장비 제어 컨트롤러 - 20230920_1750_이상민
      */
     @GetMapping("/poc")
     public String hamsPoc(
             @RequestParam String equipment_ID,
+            @RequestParam String port,
             @RequestParam String type
     ) {
         Gson gson = new Gson();
-        ResponseEntity<String> result = hamsService.hamsPoc(equipment_ID, type);
+        ResponseEntity<String> result = hamsService.hamsPoc(equipment_ID, port, type);
 
         return gson.toJson(result);
     }
