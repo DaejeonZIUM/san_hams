@@ -30,7 +30,30 @@ public class HamsPocMsgDto {
     private String sep = ","; // 구분자 기본 ","
 
     // hams server request 명령어
-    public String getMsg() {
+
+    public String getPosMsg() {
+
+        return this.prompt // Header
+                + this.sentence_ID
+                + this.sep
+                + this.talk_ID
+                + this.sep
+                + this.equipment_ID
+                + this.sep
+                + this.set_CMD
+                + this.sep
+                + this.seq_NO
+                + this.sep
+                + this.pck_Ver
+                + this.sep
+                + this.dat_FLDS
+                + this.sep
+                + this.port // Body
+                + this.asterisk // Tail
+                + this.CRC16
+                + this.ETX;
+    }
+    public String getPocMsg() {
 
         return this.prompt // Header
                 + this.sentence_ID
@@ -55,8 +78,29 @@ public class HamsPocMsgDto {
                 + this.ETX;
     }
 
+
+
     // CRC16 코드 계산용
-    public String getBody() {
+    public String getPosBody() {
+
+        return this.sentence_ID // Header
+                + this.sep
+                + this.talk_ID
+                + this.sep
+                + this.equipment_ID
+                + this.sep
+                + this.set_CMD
+                + this.sep
+                + this.seq_NO
+                + this.sep
+                + this.pck_Ver
+                + this.sep
+                + this.dat_FLDS
+                + this.sep
+                + this.port; // Body
+    }
+
+    public String getPocBody() {
 
         return this.sentence_ID // Header
                 + this.sep
@@ -76,5 +120,7 @@ public class HamsPocMsgDto {
                 + this.sep
                 + this.type;
     }
+
+
 
 }

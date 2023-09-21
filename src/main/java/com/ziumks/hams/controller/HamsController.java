@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import com.google.gson.Gson;
 
+import java.io.IOException;
+
 
 /**
  * 서치 라이트 연계 API 입니다.
@@ -39,10 +41,11 @@ public class HamsController {
      */
     @GetMapping("/pos")
     public String hamsPos(
-            @RequestParam String equipment_ID
-    ) {
+            @RequestParam String equipment_ID,
+                  @RequestParam String port
+    ) throws IOException {
         Gson gson = new Gson();
-        ResponseEntity<String> result = hamsService.hamsPos(equipment_ID);
+        ResponseEntity<String> result = hamsService.hamsPos(equipment_ID, port);
 
         return gson.toJson(result);
     }
@@ -55,7 +58,7 @@ public class HamsController {
             @RequestParam String equipment_ID,
             @RequestParam String port,
             @RequestParam String type
-    ) {
+    ) throws IOException {
         Gson gson = new Gson();
         ResponseEntity<String> result = hamsService.hamsPoc(equipment_ID, port, type);
 

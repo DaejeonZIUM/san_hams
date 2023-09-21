@@ -6,8 +6,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class HamsApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(HamsApplication.class, args);
-	}
+    public static void main(String[] args) {
+
+        SpringApplication.run(HamsApplication.class, args);
+
+
+    }
 
 }

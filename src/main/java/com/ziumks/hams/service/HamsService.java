@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
@@ -21,13 +22,18 @@ public class HamsService {
 
     @Autowired
     HamsInfoDto hamsInfo;
+    Socket socket = null;
+    OutputStream os =null; // Client에서 Server로 보내기 위한 통로
+    InputStream is = null;// Server에서 보낸 값을 받기 위한 통로
+    boolean socketStatus = false;
+
+    boolean ConStatus = false;
 
     public ResponseEntity<String> hamsCon() {
 
-        Socket socket = null;
+//        Socket socket = null;
         boolean result = false;
         String resultFromServer = null;
-
         try {
             // Hams 연결 명령어
             String conMessage = null;
@@ -40,12 +46,15 @@ public class HamsService {
             hamsConMsg.setSeq_NO("000");
             hamsConMsg.setPck_Ver("1");
             hamsConMsg.setDat_FLDS("2");
+
             /* Body */
             hamsConMsg.setId(hamsInfo.getId());
             hamsConMsg.setPw(hamsInfo.getPw());
+
             // CRC16 코드 계산(Body 영역까지)
             byte[] bytes = hamsConMsg.getBody().getBytes(Charset.forName("UTF-8"));
             String crc16 = CRC16_CCITT(hamsInfo.getCrc16_polynomial(), bytes);
+
             /* Tail */
             hamsConMsg.setCRC16(crc16);
             hamsConMsg.setETX(hamsInfo.getEtx());
@@ -56,8 +65,8 @@ public class HamsService {
             // 소켓 연결
             socket = new Socket(hamsInfo.getHost(), hamsInfo.getPort());
             log.info("socket 연결 시작");
-            OutputStream os = socket.getOutputStream(); // Client에서 Server로 보내기 위한 통로
-            InputStream is = socket.getInputStream(); // Server에서 보낸 값을 받기 위한 통로
+             os = socket.getOutputStream(); // Client에서 Server로 보내기 위한 통로
+             is = socket.getInputStream(); // Server에서 보낸 값을 받기 위한 통로
             // 바이트로 변환 후 전송
             log.info(Arrays.toString(conMessage.getBytes()));
             os.write(conMessage.getBytes());
@@ -67,26 +76,27 @@ public class HamsService {
             // 리스폰스 데이터 확인
             resultFromServer = new String(response, 0, L);
             log.info("Hams return Message check : " + resultFromServer);
-            socket.close();
             result = true;
 
         } catch (Exception e) {
+            //1. socket 연결 실패.
             e.printStackTrace();
         }
         if (result) {
+            //2. CON 성공
             return ResponseEntity.ok(resultFromServer);
         }
+        //3. CON 실패
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(resultFromServer);
     }
 
-    public ResponseEntity<String> hamsPos(String equipment_ID) {
+    public ResponseEntity<String> hamsPos(String equipment_ID, String port) throws IOException {
 
         // Hams Server 연결
         ResponseEntity<String> conResult = hamsCon();
 
-        if(conResult.getStatusCode() == HttpStatus.OK) {
+        if (conResult.getStatusCode() == HttpStatus.OK) {
 
-            Socket socket = null;
             boolean result = false;
             String resultFromServer = null;
 
@@ -103,22 +113,21 @@ public class HamsService {
                 hamsPocMsg.setPck_Ver("1");
                 hamsPocMsg.setDat_FLDS("1");
                 /* Body */
-                hamsPocMsg.setPort("0");
+                hamsPocMsg.setPort(port);
                 // CRC16 코드 계산(Body 영역까지)
-                byte[] bytes = hamsPocMsg.getBody().getBytes(Charset.forName("UTF-8"));
+                byte[] bytes = hamsPocMsg.getPosBody().getBytes(Charset.forName("UTF-8"));
                 String crc16 = CRC16_CCITT(hamsInfo.getCrc16_polynomial(), bytes);
+
                 /* Tail */
                 hamsPocMsg.setCRC16(crc16);
                 hamsPocMsg.setETX(hamsInfo.getEtx());
 
                 // 최종 명령어 출력(윈도우 서버 개행문자 리플레이스 추가)
-                posMessage = hamsPocMsg.getMsg();
-                log.info("Hams output PosMesaage check : " + posMessage.replace("\r\n", "\\r\\n"));
+                posMessage = hamsPocMsg.getPosMsg();
+                log.info("Hams output POS Mesaage check : " + posMessage.replace("\r\n", "\\r\\n"));
                 // 소켓 연결
-                socket = new Socket(hamsInfo.getHost(), hamsInfo.getPort());
-                log.info("socket 연결 시작");
-                OutputStream os = socket.getOutputStream(); // Client에서 Server로 보내기 위한 통로
-                InputStream is = socket.getInputStream(); // Server에서 보낸 값을 받기 위한 통로
+                log.info("socket POS 연결 시작");
+
                 // 바이트로 변환 후 전송
                 log.info(Arrays.toString(posMessage.getBytes()));
                 os.write(posMessage.getBytes());
@@ -127,8 +136,7 @@ public class HamsService {
                 int L = is.read(response);
                 // 리스폰스 데이터 확인
                 resultFromServer = new String(response, 0, L);
-                log.info("Hams return Message check : " + resultFromServer);
-                socket.close();
+                log.info("Hams POS return Message check : " + resultFromServer);
                 result = true;
 
             } catch (Exception e) {
@@ -137,23 +145,22 @@ public class HamsService {
             if (result) {
                 return ResponseEntity.ok(resultFromServer);
             }
-            // Hams Server 연결종료
-            hamsCon();
+            // Hams Server 연결종료 socket.close
+            socket.close();
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(resultFromServer);
+
         }
-
+        socket.close();
         return conResult;
-
     }
 
-    public ResponseEntity<String> hamsPoc(String equipment_ID, String port, String type) {
+    public ResponseEntity<String> hamsPoc(String equipment_ID, String port, String type) throws IOException {
 
         // Hams Server 연결
         ResponseEntity<String> conResult = hamsCon();
 
-        if(conResult.getStatusCode() == HttpStatus.OK) {
+        if (conResult.getStatusCode() == HttpStatus.OK) {
 
-            Socket socket = null;
             boolean result = false;
             String resultFromServer = null;
 
@@ -173,20 +180,18 @@ public class HamsService {
                 hamsPocMsg.setPort(port);
                 hamsPocMsg.setType(type);
                 // CRC16 코드 계산(Body 영역까지)
-                byte[] bytes = hamsPocMsg.getBody().getBytes(Charset.forName("UTF-8"));
+                byte[] bytes = hamsPocMsg.getPocBody().getBytes(Charset.forName("UTF-8"));
                 String crc16 = CRC16_CCITT(hamsInfo.getCrc16_polynomial(), bytes);
                 /* Tail */
                 hamsPocMsg.setCRC16(crc16);
                 hamsPocMsg.setETX(hamsInfo.getEtx());
 
                 // 최종 명령어 출력(윈도우 서버 개행문자 리플레이스 추가)
-                pocMessage = hamsPocMsg.getMsg();
-                log.info("Hams output PocMesaage check : " + pocMessage.replace("\r\n", "\\r\\n"));
-                // 소켓 연결
-                socket = new Socket(hamsInfo.getHost(), hamsInfo.getPort());
-                log.info("socket 연결 시작");
-                OutputStream os = socket.getOutputStream(); // Client에서 Server로 보내기 위한 통로
-                InputStream is = socket.getInputStream(); // Server에서 보낸 값을 받기 위한 통로
+                pocMessage = hamsPocMsg.getPocMsg();
+                log.info("Hams output Poc Mesaage check : " + pocMessage.replace("\r\n", "\\r\\n"));
+
+                log.info("socket POC 연결 시작");
+
                 // 바이트로 변환 후 전송
                 log.info(Arrays.toString(pocMessage.getBytes()));
                 os.write(pocMessage.getBytes());
@@ -195,8 +200,8 @@ public class HamsService {
                 int L = is.read(response);
                 // 리스폰스 데이터 확인
                 resultFromServer = new String(response, 0, L);
-                log.info("Hams return Message check : " + resultFromServer);
-                socket.close();
+                log.info("Hams return Poc Message check : " + resultFromServer);
+
                 result = true;
 
             } catch (Exception e) {
@@ -205,11 +210,12 @@ public class HamsService {
             if (result) {
                 return ResponseEntity.ok(resultFromServer);
             }
-            // Hams Server 연결종료
-            hamsCon();
+            // Hams Server 연결종료 socket.close
+            socket.close();
             return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(resultFromServer);
         }
-
+//
+        socket.close();
         return conResult;
 
     }
@@ -234,7 +240,6 @@ public class HamsService {
 
         return Integer.toHexString(crc & 0xFFFF).toUpperCase();
     }
-
 
 
 }
