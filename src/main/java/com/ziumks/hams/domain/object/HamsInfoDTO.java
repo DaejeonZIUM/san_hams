@@ -1,4 +1,4 @@
-package com.ziumks.hams.dto;
+package com.ziumks.hams.domain.object;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +9,7 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class HamsInfoDto {
+public class HamsInfoDTO {
 
     private String host; // hams server host
 

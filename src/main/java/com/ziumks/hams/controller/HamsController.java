@@ -35,6 +35,15 @@ public class HamsController {
 
         return gson.toJson(result);
     }
+    /*
+     * Hams Server 연결 종료 컨트롤러 - 20230922_1022_이상민
+     */
+    @GetMapping("/dis")
+    public String hamsDis() throws IOException {
+        Gson gson = new Gson();
+        hamsService.socketDisconnect();
+        return gson.toJson("소켓 연결 종료");
+    }
 
     /*
      * Hams Server 장비 상태 조회 컨트롤러 - 20230921_0940_이상민
@@ -42,7 +51,7 @@ public class HamsController {
     @GetMapping("/pos")
     public String hamsPos(
             @RequestParam String equipment_ID,
-                  @RequestParam String port
+            @RequestParam String port
     ) throws IOException {
         Gson gson = new Gson();
         ResponseEntity<String> result = hamsService.hamsPos(equipment_ID, port);
