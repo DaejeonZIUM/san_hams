@@ -30,22 +30,19 @@ public class HamsService {
     public ResponseEntity<String> hamsCon() {
         boolean result = false;
         String resultFromServer = null;
+        String conMessage = null;
         try {
             // Hams 연결 명령어
-            String conMessage = null;
-            HamsConMsgDTO hamsConMsg = new HamsConMsgDTO();
-            /* Header */
-            hamsConMsg.setConnector_ID(hamsInfo.getConn_id());
-            hamsConMsg.setDat_FLDS("2"); // 바디 데이터 필드 수
-            /* Body */
-            hamsConMsg.setId(hamsInfo.getId());
-            hamsConMsg.setPw(hamsInfo.getPw());
+            HamsConMsgDTO hamsConMsg = HamsConMsgDTO.builder()
+                    .connector_ID(hamsInfo.getConn_id()) // Header
+                    .dat_FLDS("2") // 바디 데이터 필드 수
+                    .id(hamsInfo.getId()) // Body
+                    .pw(hamsInfo.getPw())
+                    .ETX(hamsInfo.getEtx()) // Tail
+                    .build();
             // CRC16 코드 계산(Body 영역까지)
-            byte[] bytes = hamsConMsg.getBody().getBytes(Charset.forName("UTF-8"));
-            String crc16 = CRC16_CCITT(hamsInfo.getCrc16_polynomial(), bytes);
-            /* Tail */
+            String crc16 = CRC16_CCITT(hamsInfo.getCrc16_polynomial(), hamsConMsg.getBody());
             hamsConMsg.setCRC16(crc16);
-            hamsConMsg.setETX(hamsInfo.getEtx());
             // 최종 명령어 출력(윈도우 서버 개행문자 리플레이스 추가)
             conMessage = hamsConMsg.getMsg();
             log.info("Hams output Con Mesaage check : " + conMessage.replace("\r\n", "\\r\\n"));
@@ -56,14 +53,14 @@ public class HamsService {
             log.info("Hams return Con Message check : " + resultFromServer);
             result = true;
         } catch (Exception e) {
-            //1. socket 연결 실패.
-            e.printStackTrace();
+            // socket 연결 실패.
+            log.error("Hams CON error", e);
         }
         if (result) {
-            //2. CON 성공
+            // CON 성공
             return ResponseEntity.ok(resultFromServer);
         }
-        //3. CON 실패
+        // CON 실패
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(resultFromServer);
     }
 
@@ -73,22 +70,19 @@ public class HamsService {
         if (conResult.getStatusCode() == HttpStatus.OK) {
             boolean result = false;
             String resultFromServer = null;
+            String posMessage = null;
             try {
                 // Hams 연결 명령어
-                String posMessage = null;
-                HamsPoMsgDTO hamsPosMsg = new HamsPoMsgDTO();
-                /* Header */
-                hamsPosMsg.setEquipment_ID(equipment_ID);
-                hamsPosMsg.setSet_CMD("POS");
-                hamsPosMsg.setDat_FLDS("1"); // 바디 데이터 필드 수
-                /* Body */
-                hamsPosMsg.setPort(port);
+                HamsPoMsgDTO hamsPosMsg = HamsPoMsgDTO.builder()
+                        .equipment_ID(equipment_ID) // Header
+                        .set_CMD("POS")
+                        .dat_FLDS("1")
+                        .port(port) // body
+                        .ETX(hamsInfo.getEtx()) // tail
+                        .build();
                 // CRC16 코드 계산(Body 영역까지)
-                byte[] bytes = hamsPosMsg.getPosBody().getBytes(Charset.forName("UTF-8"));
-                String crc16 = CRC16_CCITT(hamsInfo.getCrc16_polynomial(), bytes);
-                /* Tail */
+                String crc16 = CRC16_CCITT(hamsInfo.getCrc16_polynomial(), hamsPosMsg.getPosBody());
                 hamsPosMsg.setCRC16(crc16);
-                hamsPosMsg.setETX(hamsInfo.getEtx());
                 // 최종 명령어 출력(윈도우 서버 개행문자 리플레이스 추가)
                 posMessage = hamsPosMsg.getPosMsg();
                 log.info("Hams output POS Mesaage check : " + posMessage.replace("\r\n", "\\r\\n"));
@@ -97,7 +91,7 @@ public class HamsService {
                 log.info("Hams POS return Message check : " + resultFromServer);
                 result = true;
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("Hams POS error", e);
             } finally {
                 // Hams Server 연결종료 socket.close
                 socketDisconnect();
@@ -118,23 +112,20 @@ public class HamsService {
         if (conResult.getStatusCode() == HttpStatus.OK) {
             boolean result = false;
             String resultFromServer = null;
+            String pocMessage = null;
             try {
                 // Hams 연결 명령어
-                String pocMessage = null;
-                HamsPoMsgDTO hamsPocMsg = new HamsPoMsgDTO();
-                /* Header */
-                hamsPocMsg.setEquipment_ID(equipment_ID);
-                hamsPocMsg.setSet_CMD("POC");
-                hamsPocMsg.setDat_FLDS("2"); // 바디 데이터 필드 수
-                /* Body */
-                hamsPocMsg.setPort(port);
-                hamsPocMsg.setType(type);
+                HamsPoMsgDTO hamsPocMsg = HamsPoMsgDTO.builder()
+                        .equipment_ID(equipment_ID) // Header
+                        .set_CMD("POC")
+                        .dat_FLDS("2")
+                        .port(port) // Body
+                        .type(type)
+                        .ETX(hamsInfo.getEtx()) // Tail
+                        .build();
                 // CRC16 코드 계산(Body 영역까지)
-                byte[] bytes = hamsPocMsg.getPocBody().getBytes(Charset.forName("UTF-8"));
-                String crc16 = CRC16_CCITT(hamsInfo.getCrc16_polynomial(), bytes);
-                /* Tail */
+                String crc16 = CRC16_CCITT(hamsInfo.getCrc16_polynomial(), hamsPocMsg.getPocBody());
                 hamsPocMsg.setCRC16(crc16);
-                hamsPocMsg.setETX(hamsInfo.getEtx());
                 // 최종 명령어 출력(윈도우 서버 개행문자 리플레이스 추가)
                 pocMessage = hamsPocMsg.getPocMsg();
                 log.info("Hams output Poc Mesaage check : " + pocMessage.replace("\r\n", "\\r\\n"));
@@ -143,7 +134,7 @@ public class HamsService {
                 log.info("Hams return Poc Message check : " + resultFromServer);
                 result = true;
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("Hams POC error", e);
             } finally {
                 // Hams Server 연결종료
                 socketDisconnect();
@@ -161,9 +152,9 @@ public class HamsService {
     /*
      *  CRC16 계산기
      */
-    public String CRC16_CCITT(int crc16_polynomial, byte[] bytes) {
+    public String CRC16_CCITT(int crc16_polynomial, String str) {
         int crc = 0xFFFF;
-
+        byte[] bytes = str.getBytes(Charset.forName("UTF-8"));
         for (byte b : bytes) {
             crc ^= (b << 8);
             for (int i = 0; i < 8; i++) {
@@ -193,7 +184,7 @@ public class HamsService {
                 socket.close();
                 log.info("socket disconnect...");
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error("socket disconnect error", e);
             }
         });
     }
