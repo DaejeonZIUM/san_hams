@@ -15,6 +15,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.Charset;
 import java.util.Arrays;
+import java.util.Optional;
 
 @Slf4j
 @Service("hamsService")
@@ -175,7 +176,6 @@ public class HamsService {
         }
         return Integer.toHexString(crc & 0xFFFF).toUpperCase();
     }
-
     /*
      * 소켓 관련 메소드
      */
@@ -186,11 +186,16 @@ public class HamsService {
         os = socket.getOutputStream(); // Client에서 Server로 보내기 위한 통로
         is = socket.getInputStream(); // Server에서 보낸 값을 받기 위한 통로
     }
-    public void socketDisconnect() throws IOException {
-        is.close();
-        os.close();
-        socket.close();
-        log.info("socket disconnect...");
+    public void socketDisconnect() {
+        Optional<Socket> optSocket = Optional.ofNullable(socket);
+        optSocket.ifPresent(socket -> {
+            try {
+                socket.close();
+                log.info("socket disconnect...");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
     public String socketSend(String request) throws IOException {
         String response = null;
